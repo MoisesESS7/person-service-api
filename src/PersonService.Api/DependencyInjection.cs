@@ -1,16 +1,15 @@
 ﻿using PersonService.Api.Builders;
 using PersonService.Api.Mappers;
-using AutoMapper;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.OpenApi;
 
 namespace PersonService.Api
 {
-    public static class Bootstrapper
+    public static class DependencyInjection
     {
-        public static void AddApi(this IServiceCollection service, IConfiguration configuration)
+        public static void AddApi(this IServiceCollection services, IConfiguration configuration)
         {
-            service.AddCors(options =>
+            services.AddCors(options =>
             {
                 options.AddPolicy("DevPolicy", policy =>
                 {
@@ -22,22 +21,22 @@ namespace PersonService.Api
             });
 
             // AutoMapper
-            service.AddAutoMapper(c =>
+            services.AddAutoMapper(c =>
             {
                 c.AddProfile(typeof(PersonProfile));
             });
 
             // LinkBuiler
-            service.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
-            service.AddScoped<ILinkBuilder, LinkBuilder>();
+            services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
+            services.AddScoped<ILinkBuilder, LinkBuilder>();
 
             // Swagger
-            ConfigureSwagger(service, configuration);
+            ConfigureSwagger(services, configuration);
         }
 
-        private static void ConfigureSwagger(IServiceCollection service, IConfiguration configuration)
+        private static void ConfigureSwagger(IServiceCollection services, IConfiguration configuration)
         {
-            service.AddSwaggerGen(options =>
+            services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo
                 {

@@ -9,17 +9,17 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace PersonService.Infra.Ioc
 {
-    public static class Bootstrapper
+    public static class DependencyInjection
     {
-        public static void AddInfrastructure(this IServiceCollection service, IConfiguration configuration)
+        public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             var connection = configuration["MongoSettings:ConnectionString"];
 
-            service.AddSingleton<IMongoClient>(_ => new MongoClient(connection));
+            services.AddSingleton<IMongoClient>(_ => new MongoClient(connection));
 
-            service.AddSingleton<IMongoDbContext, MongoDbContext>();
+            services.AddSingleton<IMongoDbContext, MongoDbContext>();
 
-            service
+            services
             .AddHealthChecks()
             .AddMongoDb(
                 sp => sp.GetRequiredService<IMongoClient>(),
@@ -27,8 +27,8 @@ namespace PersonService.Infra.Ioc
                 tags: new[] { "database", "mongodb" })
             .AddCheck("self", () => HealthCheckResult.Healthy());
 
-            service.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
-            service.AddScoped<IRepositoryExecutor, RepositoryExecutor>();
+            services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
+            services.AddScoped<IRepositoryExecutor, RepositoryExecutor>();
         }
     }
 }
