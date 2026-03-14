@@ -6,24 +6,21 @@ using MongoDB.Driver;
 
 namespace PersonService.Infra.Data.Context
 {
-    public class MongoDbContext : IMongoDbContext
+    public sealed class MongoDbContext : IMongoDbContext
     {
         private readonly IMongoDatabase _database;
 
-        public MongoDbContext(IConfiguration configuration)
+        public MongoDbContext(IMongoClient client, IConfiguration configuration)
         {
             MongoDbConventions.RegisterConventions();
 
-            var connection = configuration["mongoDb:connectionString"];
-            var databaseName = configuration["mongoDb:databaseName"];
-
-            var client = new MongoClient(connection);
+            var databaseName = configuration["MongoSettings:DatabaseName"];
 
             _database = client.GetDatabase(databaseName);
 
             MongoIndexInitializer.Configure(_database);
         }
-        
+
         public IMongoCollection<T> GetCollection<T>()
         {
             return _database.GetCollection<T>(_database.GetCollectionName<T>());
