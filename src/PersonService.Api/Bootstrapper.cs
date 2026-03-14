@@ -2,7 +2,7 @@
 using PersonService.Api.Mappers;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace PersonService.Api
 {
@@ -10,6 +10,17 @@ namespace PersonService.Api
     {
         public static void AddApi(this IServiceCollection service, IConfiguration configuration)
         {
+            service.AddCors(options =>
+            {
+                options.AddPolicy("DevPolicy", policy =>
+                {
+                    policy
+                        .AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader();
+                });
+            });
+
             // AutoMapper
             service.AddAutoMapper(c =>
             {
@@ -47,7 +58,7 @@ namespace PersonService.Api
                     var groupName = api.GroupName;
                     return [groupName ?? api.ActionDescriptor.RouteValues["controller"]];
                 });
-                options.DocInclusionPredicate((name, api) => { return true; });
+                options.DocInclusionPredicate((name, api) => true);
             });
         }
 

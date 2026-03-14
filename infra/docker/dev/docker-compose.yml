@@ -1,0 +1,64 @@
+services:
+
+  mongodb:
+    image: mongo:7
+    container_name: personservice-mongo-dev
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    ports:
+      - "${MONGO_PORT}:27017"
+    volumes:
+      - mongo_dev_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh -u ${MONGO_USERNAME} -p ${MONGO_PASSWORD} --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - personservice-dev-network
+
+  personservice:
+
+    build:
+      context: ../../..
+      dockerfile: src/PersonService.Api/Dockerfile.dev
+
+    container_name: personservice-api-dev
+
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+    volumes:
+      - ../../../src:/src
+      - ../../../https:/https
+
+    working_dir: /src/PersonService.Api
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+      ASPNETCORE_URLS: "https://+:${HTTPS_PORT};http://+:${API_PORT}"
+
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
+      ASPNETCORE_Kestrel__Certificates__Default__Password: ${CERT_PASSWORD}
+
+      MongoSettings__ConnectionString: ${MONGO_CONNECTION_STRING}
+      MongoSettings__DatabaseName: ${MONGO_DATABASE}
+
+    ports:
+      - "${API_PORT}:8080"
+      - "${HTTPS_PORT}:8081"
+
+    networks:
+      - personservice-dev-network
+
+volumes:
+  mongo_dev_data:
+
+networks:
+  personservice-dev-network:
+    driver: bridge

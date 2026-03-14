@@ -1,0 +1,42 @@
+services:
+
+  mongodb:
+    image: mongo:7
+    container_name: personservice-mongo-prod
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "${MONGO_PORT}:27017"
+    volumes:
+      - mongo_prod_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh -u ${MONGO_USERNAME} -p ${MONGO_PASSWORD} --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - personservice-prod-network
+
+  personservice:
+    image: ${DOCKER_USERNAME}/personservice:latest
+    container_name: personservice-api-prod
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      MongoSettings__ConnectionString: ${MONGO_CONNECTION_STRING}
+      MongoSettings__DatabaseName: ${MONGO_DATABASE}
+    ports:
+      - "${API_PORT}:8080"
+    restart: always
+    networks:
+      - personservice-prod-network
+
+volumes:
+  mongo_prod_data:
+
+networks:
+  personservice-prod-network:
+    driver: bridge

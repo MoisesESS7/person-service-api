@@ -28,13 +28,33 @@ var app = builder.Build();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger(c =>
+    {
+        c.PreSerializeFilters.Add((swagger, req) =>
+        {
+            swagger.Servers =
+            [
+                new() { Url = $"{req.Scheme}://{req.Host.Value}" }
+            ];
+        });
+    });
+
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "PersonService API v1");
+    });
+}
+
+app.UseCors("DevPolicy");
+
+app.MapHealthChecks("/health");
 
 app.UseAuthorization();
 

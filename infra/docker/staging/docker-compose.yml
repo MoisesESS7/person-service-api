@@ -1,0 +1,41 @@
+services:
+
+  mongodb:
+    image: mongo:7
+    container_name: personservice-mongo-staging
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${MONGO_PORT}:27017"
+    volumes:
+      - mongo_staging_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh -u ${MONGO_USERNAME} -p ${MONGO_PASSWORD} --authenticationDatabase admin --eval 'db.adminCommand(\"ping\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - personservice-staging-network
+
+  personservice:
+    image: ${DOCKER_USERNAME}/personservice:staging
+    container_name: personservice-api-staging
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      MongoSettings__ConnectionString: mongodb://mongodb:27017
+      MongoSettings__Database: personservice_staging
+    ports:
+      - "${API_PORT}:8080"
+    networks:
+      - personservice-staging-network
+
+volumes:
+  mongo_staging_data:
+
+networks:
+  personservice-staging-network:
+    driver: bridge
