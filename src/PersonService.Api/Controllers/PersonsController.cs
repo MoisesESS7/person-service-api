@@ -1,3 +1,6 @@
+using AutoMapper;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using PersonService.Api.Builders;
 using PersonService.Api.Contracts.Requests.Persons;
 using PersonService.Api.Models;
@@ -6,9 +9,7 @@ using PersonService.Application.Features.Persons.Commands.Delete;
 using PersonService.Application.Features.Persons.Commands.Update;
 using PersonService.Application.Features.Persons.Queries.GetById;
 using PersonService.Application.Features.Persons.Queries.PagedSearch;
-using AutoMapper;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
+using PersonService.Shared.Results;
 using ApiPersonResponse = PersonService.Api.Contracts.Responses.Persons.PersonResponse;
 
 namespace PersonService.Api.Controllers
@@ -35,7 +36,7 @@ namespace PersonService.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<ApiPersonResponse>> GetAsync([FromRoute] string id)
+        public async Task<ActionResult> GetAsync([FromRoute] string id)
         {
             _logger.LogInformation("Retrieving person with ID {Id}.", id);
             var query = _mapper.Map<GetPersonByIdQuery>(id);
@@ -48,11 +49,11 @@ namespace PersonService.Api.Controllers
             var response = _mapper.Map<ApiPersonResponse>(result.Value);
 
             _logger.LogInformation("Person with ID {Id} retrieved successfully.", id);
-            return Ok(response);
+            return ToActionResult(ResultOfT<ApiPersonResponse>.Ok(response));
         }
 
         [HttpGet(Name = "Paged")]
-        public async Task<ActionResult<PagedResponse<ApiPersonResponse>>> GetPagedAsync(SearchParamsQuery searchParams)
+        public async Task<ActionResult> GetPagedAsync(SearchParamsQuery searchParams)
         {
             _logger.LogInformation("Retrieving all persons from databse.");
             var query = _mapper.Map<PagedSearchQuery>(searchParams);
@@ -61,7 +62,7 @@ namespace PersonService.Api.Controllers
 
             if (result.IsFailure)
                 return ToActionResult(result);
-            
+
             var response = _mapper.Map<PagedResponse<ApiPersonResponse>>(result.Value);
 
             var links = _linkBuilder.Build(
@@ -79,12 +80,12 @@ namespace PersonService.Api.Controllers
                 searchParams.PageNumber,
                 result.Value?.Meta.PageMeta?.TotalPages ?? 0
             );
-            
-            return Ok(response);
+
+            return ToActionResult(ResultOfT<PagedResponse<ApiPersonResponse>>.Ok(response));
         }
 
         [HttpPost]
-        public async Task<ActionResult<ApiPersonResponse>> CreateAsync([FromBody] CreatePersonRequest request)
+        public async Task<ActionResult> CreateAsync([FromBody] CreatePersonRequest request)
         {
             _logger.LogInformation("Creating new person with name: {Name}", request.Name);
             var command = _mapper.Map<CreatePersonCommand>(request);
@@ -106,7 +107,7 @@ namespace PersonService.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<ApiPersonResponse>> UpdateAsync([FromRoute] string id, [FromBody] UpdatePersonRequest request)
+        public async Task<ActionResult> UpdateAsync([FromRoute] string id, [FromBody] UpdatePersonRequest request)
         {
             _logger.LogInformation("Updating person with ID {Id}", id);
             request.SetId(id);
@@ -121,7 +122,7 @@ namespace PersonService.Api.Controllers
             var response = _mapper.Map<ApiPersonResponse>(result.Value);
 
             _logger.LogInformation("Person with ID {Id} updated successfully.", id);
-            return Ok(response);
+            return ToActionResult(ResultOfT<ApiPersonResponse>.Ok(response));
         }
 
         [HttpDelete("{id}")]
